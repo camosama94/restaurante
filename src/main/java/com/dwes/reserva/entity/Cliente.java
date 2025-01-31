@@ -1,5 +1,6 @@
 package com.dwes.reserva.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -32,6 +33,7 @@ public class Cliente {
     @NotBlank(message="El telefono no puede estar en blanco")
     private String telefono;
 
+    @JsonIgnore
     @OneToMany(targetEntity = Reserva.class, cascade = CascadeType.ALL, mappedBy = "cliente")
     private List<Reserva> reservas = new ArrayList<>();
 }

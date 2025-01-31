@@ -6,7 +6,6 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,24 +17,24 @@ public class ClienteController {
         @Autowired
         private ClienteRepository clienteRepository;
 
-        @GetMapping("/Clientes")
+        @GetMapping("/clientes")
         public ResponseEntity<List<Cliente>> getAllClientes() {
                 List<Cliente> clientes = clienteRepository.findAll();
                 return ResponseEntity.ok(clientes);
         }
 
-        @PostMapping("/Clientes")
+        @PostMapping("/clientes")
         public ResponseEntity<?> guardarCliente(@RequestBody @Valid Cliente cliente) {
                 try {
-                        Cliente clienteSalvo = clienteRepository.save(cliente);
-                        return ResponseEntity.status(HttpStatus.CREATED).body(clienteSalvo);
+                        Cliente clienteSave = clienteRepository.save(cliente);
+                        return ResponseEntity.status(HttpStatus.CREATED).body(clienteSave);
                 }catch (DataIntegrityViolationException e){
                         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El correo electrónico ya esta registrado");
                 }
 
         }
 
-        @PutMapping("/Clientes/{id}")
+        @PutMapping("/clientes/{id}")
         public ResponseEntity<Cliente> editarCliente(@PathVariable Long id, @RequestBody @Valid Cliente cliente) {
                 return clienteRepository.findById(id)
                         .map(cliente1 ->{
@@ -47,7 +46,7 @@ public class ClienteController {
                         }).orElse(ResponseEntity.notFound().build());
         }
 
-        @DeleteMapping("/Clientes/{id}")
+        @DeleteMapping("/clientes/{id}")
         public ResponseEntity<?> eliminarCliente(@PathVariable Long id) {
                 return clienteRepository.findById(id)
                         .map(cliente ->{

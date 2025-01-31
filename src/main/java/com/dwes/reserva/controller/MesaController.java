@@ -4,6 +4,7 @@ import com.dwes.reserva.entity.Mesa;
 import com.dwes.reserva.repository.MesaRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,18 +17,23 @@ public class MesaController {
     @Autowired
     private MesaRepository mesaRepository;
 
-    @GetMapping("/Mesas")
+    @GetMapping("/mesas")
     public ResponseEntity<List<Mesa>> mostrarMesas() {
         List<Mesa> mesas = mesaRepository.findAll();
         return ResponseEntity.ok(mesas);
     }
 
-    @PostMapping("/Mesas")
-    public ResponseEntity<Mesa> guardarMesa(@RequestBody @Valid Mesa mesa) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(mesaRepository.save(mesa));
+    @PostMapping("/mesas")
+    public ResponseEntity<?> guardarMesa(@RequestBody @Valid Mesa mesa) {
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(mesaRepository.save(mesa));
+        }catch (DataIntegrityViolationException e){
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("La mesa ya existe");
+        }
+
     }
 
-    @PutMapping("/Mesas/{id}")
+    @PutMapping("/mesas/{id}")
     public ResponseEntity<Mesa> editarMesa(@PathVariable Long id, @RequestBody @Valid Mesa mesa) {
         return mesaRepository.findById(id)
                 .map(mesa1 ->{
@@ -38,7 +44,7 @@ public class MesaController {
                 }).orElse(ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping("/Mesas/{id}")
+    @DeleteMapping("/mesas/{id}")
     public ResponseEntity<?> eliminarMesa(@PathVariable Long id) {
         return mesaRepository.findById(id)
                 .map(mesa ->{

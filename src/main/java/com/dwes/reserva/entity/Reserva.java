@@ -1,5 +1,6 @@
 package com.dwes.reserva.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
@@ -23,6 +24,7 @@ public class Reserva {
 
     @NotNull(message="La reserva debe tener una fecha")
     @FutureOrPresent(message = "La reserva no puede ser para una fecha pasada")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     private LocalDate fecha;
 
     @NotNull(message = "La reserva debe tener una hora")
@@ -39,7 +41,7 @@ public class Reserva {
 
     private Mesa mesa;
 
-    @NotNull(message="Debe existir un n")
+    @NotNull(message="Debe existir un numero de personas")
     private int numeroPersonas;
 
 }
