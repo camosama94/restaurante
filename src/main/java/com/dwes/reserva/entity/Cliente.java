@@ -36,4 +36,9 @@ public class Cliente {
     @JsonIgnore
     @OneToMany(targetEntity = Reserva.class, cascade = CascadeType.ALL, mappedBy = "cliente")
     private List<Reserva> reservas = new ArrayList<>();
+
+    @JsonIgnore
+    @OneToOne
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    private UserEntity userEntity;
 }

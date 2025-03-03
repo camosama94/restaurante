@@ -1,5 +1,6 @@
 package com.dwes.reserva.controller;
 
+import com.dwes.reserva.DTO.DisponibilidadDTO;
 import com.dwes.reserva.entity.Mesa;
 import com.dwes.reserva.repository.MesaRepository;
 import jakarta.validation.Valid;

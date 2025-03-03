@@ -1,6 +1,7 @@
 package com.dwes.reserva.controller;
 
 import com.dwes.reserva.DTO.DetallesReservaDTO;
+import com.dwes.reserva.DTO.DisponibilidadDTO;
 import com.dwes.reserva.entity.Cliente;
 import com.dwes.reserva.entity.Mesa;
 import com.dwes.reserva.entity.Reserva;
@@ -10,11 +11,13 @@ import com.dwes.reserva.repository.ReservaRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -38,7 +41,8 @@ public class ReservaController {
             if (reserva.getHora().getMinute() != 0 || reserva.getHora().getSecond() != 0) {
                 return ResponseEntity.status (HttpStatus.BAD_REQUEST).body("La hora debe ser exacta (ej: 13:00, 14:00, 15:00)");
             }else {
-                Optional<Cliente> cliente = clienteRepository.findById(reserva.getCliente().getId());//.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
+                Optional<Cliente> cliente = clienteRepository.findByUserEntity_Id(reserva.getCliente().getId());
+
                 Optional<Mesa> mesa = mesaRepository.findById(reserva.getMesa().getId());
                 if(!cliente.isPresent()){
                     return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Cliente no encontrado");
@@ -86,5 +90,27 @@ public class ReservaController {
                     reservaRepository.delete(reserva);
                     return ResponseEntity.noContent().build();
                 }).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Reserva no encontrada"));
+    }
+
+    @GetMapping("/disponibilidad/{fecha}/{hora}")
+    public ResponseEntity<List<DisponibilidadDTO>> verificarDisponibilidad(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha ,
+                                                                           @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.TIME) LocalTime hora) {
+        List<Mesa> mesas = mesaRepository.findAll();
+        List<DisponibilidadDTO> mesasDTO = new ArrayList<>();
+
+        List<Reserva> reservas = reservaRepository.findByFechaAndHora(fecha, hora);
+
+        // Verificar la disponibilidad de cada mesa
+        for (Mesa mesa : mesas) {
+            // Comprobar si hay alguna reserva para esta mesa en la fecha y hora seleccionadas
+            boolean estaOcupada = reservas.stream()
+                    .anyMatch(reserva -> reserva.getMesa().getId().equals(mesa.getId()));
+
+            // Crear el DTO para cada mesa con la información de disponibilidad
+            mesasDTO.add(new DisponibilidadDTO(mesa.getId(), mesa.getNumero(), mesa.getDescripcion(), !estaOcupada));
+        }
+
+
+        return ResponseEntity.ok(mesasDTO);
     }
 }

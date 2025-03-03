@@ -4,7 +4,9 @@ import com.dwes.reserva.DTO.LoginRequestDTO;
 import com.dwes.reserva.DTO.LoginResponseDTO;
 import com.dwes.reserva.DTO.UserRegisterDTO;
 import com.dwes.reserva.config.JwtTokenProvider;
+import com.dwes.reserva.entity.Cliente;
 import com.dwes.reserva.entity.UserEntity;
+import com.dwes.reserva.repository.ClienteRepository;
 import com.dwes.reserva.repository.UserEntityRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -31,6 +33,8 @@ public class AuthController {
     private JwtTokenProvider tokenProvider;
     @Autowired
     private AuthenticationManager authenticationManager;
+    @Autowired
+    private ClienteRepository clienteRepository;
 
     @PostMapping("/auth/register")
     public ResponseEntity<UserEntity> save(@RequestBody UserRegisterDTO userDTO) {
@@ -39,8 +43,19 @@ public class AuthController {
                         .username(userDTO.getUsername())
                         .password(passwordEncoder.encode(userDTO.getPassword()))
                         .email(userDTO.getEmail())
-                        .authorities(List.of("ROLE_USER", "ROLE_ADMIN"))
-                        .build());
+                        .authorities(List.of("ROLE_USER"))
+            .build());
+
+        // Crear el cliente asociado
+        Cliente cliente = Cliente.builder()
+                .nombre(userDTO.getUsername())
+                .email(userDTO.getEmail())
+                .telefono(userDTO.getTelefono())  // Tomar el teléfono del DTO
+                .userEntity(userEntity)  // Relacionar cliente con el usuario
+                .build();
+
+        // Guardar el cliente
+        this.clienteRepository.save(cliente);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(userEntity);
 
