@@ -2,6 +2,8 @@ package com.dwes.reserva.controller;
 
 import com.dwes.reserva.DTO.DetallesReservaDTO;
 import com.dwes.reserva.DTO.DisponibilidadDTO;
+import com.dwes.reserva.config.JwtFilter;
+import com.dwes.reserva.config.JwtTokenProvider;
 import com.dwes.reserva.entity.Cliente;
 import com.dwes.reserva.entity.Mesa;
 import com.dwes.reserva.entity.Reserva;
@@ -34,6 +36,14 @@ public class ReservaController {
 
     @Autowired
     private MesaRepository mesaRepository;
+
+    @Autowired
+    private JwtTokenProvider tokenProvider;
+
+    @Autowired
+    private JwtFilter tokeFilter;
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
 
     @PostMapping("/reservas")
     public ResponseEntity<?> addReserva(@RequestBody @Valid Reserva reserva) {
@@ -70,6 +80,7 @@ public class ReservaController {
         reservaRepository.findReservaByFecha(fecha).forEach(reserva -> {
             reservaDTO.add(
                     DetallesReservaDTO.builder()
+                            .idReserva(reserva.getId())
                             .nombre(reserva.getCliente().getNombre())
                             .email(reserva.getCliente().getEmail())
                             .fecha(reserva.getFecha())
@@ -84,9 +95,19 @@ public class ReservaController {
     }
 
     @DeleteMapping("/reservas/{id}")
-    public ResponseEntity<?> deleteReserva(@PathVariable Long id) {
+    public ResponseEntity<?> deleteReserva(@PathVariable Long id ,@RequestHeader("Authorization") String token) {
+        String jwtToken = token.replace("Bearer ", "");
+        Long idUsuario = tokenProvider.getUserIdFromToken(jwtToken);
+
+        Optional<Cliente> cliente = clienteRepository.findByUserEntity_Id(idUsuario);
+
         return reservaRepository.findById(id)
                 .map(reserva -> {
+
+                    if (!reserva.getCliente().getId().equals(cliente.get().getId())) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permiso para eliminar esta reserva");
+                    }
+
                     reservaRepository.delete(reserva);
                     return ResponseEntity.noContent().build();
                 }).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Reserva no encontrada"));
@@ -112,5 +133,30 @@ public class ReservaController {
 
 
         return ResponseEntity.ok(mesasDTO);
+    }
+
+    @GetMapping("/reservas/{idUsuario}")
+    public ResponseEntity<List<DetallesReservaDTO>> getDetallesReserva(@PathVariable Long idUsuario) {
+        List<DetallesReservaDTO> reservaDTO = new ArrayList<>();
+
+        Optional<Cliente> cliente = clienteRepository.findByUserEntity_Id(idUsuario);
+
+
+
+        reservaRepository.findByCliente_Id(cliente.get().getId()).forEach(reserva -> {
+            reservaDTO.add(
+                    DetallesReservaDTO.builder()
+                            .idReserva(reserva.getId())
+                            .nombre(reserva.getCliente().getNombre())
+                            .email(reserva.getCliente().getEmail())
+                            .fecha(reserva.getFecha())
+                            .hora(reserva.getHora())
+                            .numeroMesa(reserva.getMesa().getNumero())
+                            .descripcion(reserva.getMesa().getDescripcion())
+                            .numeroPersonas(reserva.getNumeroPersonas())
+                            .build()
+            );
+        });
+        return ResponseEntity.ok(reservaDTO);
     }
 }

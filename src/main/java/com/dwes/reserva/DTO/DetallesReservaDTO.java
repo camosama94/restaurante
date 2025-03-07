@@ -9,6 +9,7 @@ import java.time.LocalTime;
 @Data
 @Builder
 public class DetallesReservaDTO {
+    private Long idReserva;
     private String nombre;
     private String email;
     private LocalDate fecha;

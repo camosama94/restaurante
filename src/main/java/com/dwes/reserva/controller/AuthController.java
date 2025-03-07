@@ -14,14 +14,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.security.core.GrantedAuthority;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 public class AuthController {
@@ -37,21 +41,26 @@ public class AuthController {
     private ClienteRepository clienteRepository;
 
     @PostMapping("/auth/register")
-    public ResponseEntity<UserEntity> save(@RequestBody UserRegisterDTO userDTO) {
+    public ResponseEntity<?> save(@RequestBody UserRegisterDTO userDTO) {
+
+
+
         UserEntity userEntity = this.userRepository.save(
                 UserEntity.builder()
                         .username(userDTO.getUsername())
                         .password(passwordEncoder.encode(userDTO.getPassword()))
                         .email(userDTO.getEmail())
-                        .authorities(List.of("ROLE_USER"))
-            .build());
+                        .authorities(List.of(new SimpleGrantedAuthority("ROLE_USER")).stream()
+                                .map(GrantedAuthority::getAuthority)
+                                .collect(Collectors.toList()))
+                        .build());
 
         // Crear el cliente asociado
         Cliente cliente = Cliente.builder()
                 .nombre(userDTO.getUsername())
                 .email(userDTO.getEmail())
-                .telefono(userDTO.getTelefono())  // Tomar el teléfono del DTO
-                .userEntity(userEntity)  // Relacionar cliente con el usuario
+                .telefono(userDTO.getTelefono())
+                .userEntity(userEntity)
                 .build();
 
         // Guardar el cliente
@@ -86,4 +95,6 @@ public class AuthController {
             );
         }
     }
+
+
 }

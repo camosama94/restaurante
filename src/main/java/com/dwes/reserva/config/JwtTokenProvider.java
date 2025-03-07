@@ -8,9 +8,12 @@ import io.jsonwebtoken.security.Keys;
 import io.micrometer.common.util.StringUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import org.springframework.security.core.GrantedAuthority;
+
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtTokenProvider {
@@ -22,11 +25,16 @@ public class JwtTokenProvider {
 
         UserEntity user = (UserEntity) authentication.getPrincipal();
         SecretKey key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+        // Obtener los roles desde la relación con UserAuthority
+        String roles = String.join(",", user.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority) // Convertir cada GrantedAuthority a String (role)
+                .toList());
 
         return Jwts.builder()
                 .subject(Long.toString(user.getId()))
                 .claim("email", user.getEmail())
                 .claim("username", user.getUsername())
+                .claim("roles", roles)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(key) // Firma con el algoritmo por defecto
@@ -63,4 +71,28 @@ public class JwtTokenProvider {
         Claims claims = parser.parseClaimsJws(token).getBody();
         return claims.get("username").toString();
     }
+
+
+    public String getRolesFromToken(String token) {
+        Claims claims = Jwts.parser()  // Usamos parser() como antes
+                .setSigningKey(Keys.hmacShaKeyFor(SECRET_KEY.getBytes()))  // Establecemos la clave secreta
+                .build()  // Es necesario llamar a build() para crear el parser
+                .parseSignedClaims(token)  // Usamos parseSignedClaims en lugar de parseClaimsJws
+                .getPayload();  // Extraemos el cuerpo del JWT
+
+        return claims.get("roles", String.class);  // Devolvemos el rol como una cadena
+    }
+
+
+    public Long getUserIdFromToken(String token) {
+        Claims claims = Jwts.parser()
+                .setSigningKey(Keys.hmacShaKeyFor(SECRET_KEY.getBytes()))
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+
+        return Long.parseLong(claims.getSubject()); // El "sub" del JWT es el ID del usuario por convención
+    }
+
+
 }
